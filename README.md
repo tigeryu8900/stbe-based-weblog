@@ -1,4 +1,4 @@
-# STBE-based Weblog: A library and Tools for encoding Apache weblog files and decoding and reading encoded weblog files (tests use [NASA's weblog files](http://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html))
+# STBE-based Weblog: A library and Tools for working on Apache weblog files
 
 This project provides a library and tools that could be used to enode Apache weblog files and decoding and reading encoded files based on [static-trie-based-encoding](../../../static-trie-based-encoding).
 
