@@ -1,10 +1,15 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <ctime>
+#include "stbe.h"
+#include "weblog-record.h"
+
 #include "weblog-encoder.h"
 
 namespace weblog {
 
-
 std::time_t Encoder::toUnixTime(const std::string& time) {
-  std::cout << "Input time: " << time;
   int day;
   std::string mon_str;
   int yr;
@@ -56,25 +61,50 @@ std::time_t Encoder::toUnixTime(const std::string& time) {
   return static_cast<time_t>(std::mktime(&tm) - zone);
 }
 
-bool Encoder::encode(const std::string& input, const std::string& output) {
-  inf_.open(input);
-  ouf_.open(output);
-  char buf[4096];
-  std::string host;
-  std::string timestamp;
-  std::string request;
-  int reply;
-  int bytes;
-  
-  while (!inf_.eof()) {
-    inf_.getline(buf, 4096);
-    re2::RE2::FullMatch(buf, re_, &host, &timestamp, &request, &reply, &bytes);
-    ouf_ << "Host: " << host << " Timestamp (original): " << timestamp
-          << " Timestamp(Unix): " << toUnixTime(timestamp) << " Request: " << request
-          << " Reply: " << reply << " Bytes: " << bytes << std::endl;
+bool Encoder::encode(const std::string& input_fname, const std::string& output_fname) {
+  if (!re_.ok() || !timestamp_re_.ok()) {
+    std::cout << "in valid regular expression" << std::endl;
+    return false;
   }
+
+  std::ifstream inf(input_fname);
+
+  Record record;
+  std::string line;
+  std::string str_timestamp;
+  std::string str_bytes;
+
+  // mktime uses local timezone, we need to set TZ to "" to let system use UTC
+  char* tz = getenv("TZ");
+  setenv("TZ", "", 1);
+  tzset();
+
+  stbe::Builder<Record, WeblogRecordMarshaller> builder;
+  builder.initialize(output_fname);
+  while (std::getline(inf, line)) {
+    bool success = re2::RE2::FullMatch(line, re_, &record.host, &str_timestamp, &record.request, &record.reply, &str_bytes);
+    if (!success) {
+      std::cout << "unrecognized record:" << std::endl << line << std::endl;
+    }
+    record.timestamp = toUnixTime(str_timestamp);
+    if (str_bytes == "-") {
+      record.bytes = -1;
+    } else {
+      record.bytes = std::stoi(str_bytes);
+    }
+    builder.add(record);
+  }
+  builder.finalize();
+
+  // restore TZ
+  if (tz) {
+    setenv("TZ", tz, 1);
+  } else {
+    unsetenv("TZ");
+  }
+  tzset();
   return true;
 }
 
 
-} // weblog
+}  // namespace weblog

@@ -4,13 +4,15 @@ project(stbe-weblog C CXX)
 
 # version number
 SET ( VERSION_MAJOR 0 )
-SET ( VERSION_MINOR 0 )
+SET ( VERSION_MINOR 1 )
+
+# CMake policies
+cmake_policy(SET CMP0022 NEW)
 
 SET ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11" )
 
 # External dependencies
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/external)
-message( "*********  CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}" )
 
 # Location where external projects will be downloaded
 set (DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/downloads"
@@ -18,8 +20,10 @@ set (DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/downloads"
 mark_as_advanced(DOWNLOAD_LOCATION)
 
 # External dependencies
-include(re2)
 include(stbe)
+include(re2)
+include(gflags)
+#find_package(gflags REQUIRED)
 
 
 # Download and unpack googletest at configure time
@@ -48,6 +52,10 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
                  ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
                  EXCLUDE_FROM_ALL)
 
+#add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/gflags-src
+#                 ${CMAKE_CURRENT_BINARY_DIR}/gflags-build
+#                 EXCLUDE_FROM_ALL)
+
 # The gtest/gtest_main targets carry header search path
 # dependencies automatically when using CMake 2.8.11 or
 # later. Otherwise we have to add them here ourselves.
@@ -62,15 +70,21 @@ add_library(stbeweblog
         src/weblog-decoder.cpp
         src/weblog-reader.cpp)
 
+add_dependencies(stbeweblog re2_lib re2 stbe gtest gflags gflags_lib)
+
 # Now simply link against gtest or gtest_main as needed. Eg
+
+#set(gflags_DIR "${PROJECT_SOURCE_DIR}/external")
 
 # Setup testing
 enable_testing()
 #find_package(GTest REQUIRED)
+#find_package(gflags REQUIRED)
 
 include_directories(include src
                     ${gtest_SOURCE_DIR}/include 
                     ${re2_INCLUDE_DIR}
+                    ${gflags_INCLUDE_DIR}
                     ${stbe_INCLUDE_DIR})
 
 
@@ -85,10 +99,7 @@ add_executable(stbewl
 #)
 
 #message( "tigerdebug re2 lib ${re2_STATIC_LIBRARIES}" )
-target_link_libraries(stbewl stbeweblog stbe_lib gtest gtest_main re2_lib)
+target_link_libraries(stbewl stbeweblog stbe_lib gtest gtest_main re2_lib gflags_lib)
 #target_link_libraries(stbe_test libstbe gtest gtest_main)
 #add_test(NAME stbe_test COMMAND stbe_test)
-#i
-
-
 
